@@ -18,6 +18,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.SF_New"
+        android:icon="@drawable/sf_recognition"
         tools:targetApi="31">
 
         <!-- AdMob App ID -->

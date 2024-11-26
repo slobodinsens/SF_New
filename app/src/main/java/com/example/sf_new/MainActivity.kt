@@ -2,13 +2,16 @@ package com.example.sf_new
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -24,6 +27,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var previewView: PreviewView
     private lateinit var webView: WebView
 
+    private val CAMERA_REQUEST_CODE = 100
+
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,6 +42,7 @@ class MainActivity : AppCompatActivity() {
 
         val recognitionButton: Button = findViewById(R.id.sf_recognition)
         val stolenCarButton: Button = findViewById(R.id.stolen_car)
+        val photoButton: Button = findViewById(R.id.photo)
 
         showElement(webVisible = false, cameraVisible = false)
 
@@ -48,6 +54,14 @@ class MainActivity : AppCompatActivity() {
         stolenCarButton.setOnClickListener {
             showElement(webVisible = true, cameraVisible = false)
             loadStolenCarPage()
+        }
+
+        photoButton.setOnClickListener {
+            if (isCameraPermissionGranted()) {
+                openCamera()
+            } else {
+                requestCameraPermission()
+            }
         }
     }
 
@@ -62,34 +76,48 @@ class MainActivity : AppCompatActivity() {
         previewView.visibility = if (cameraVisible) android.view.View.VISIBLE else android.view.View.GONE
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE_PERMISSIONS && allPermissionsGranted()) {
-            setupCamera()
+    private fun isCameraPermissionGranted(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestCameraPermission() {
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.CAMERA),
+            CAMERA_REQUEST_CODE
+        )
+    }
+
+    @Suppress("DEPRECATION")
+    private fun openCamera() {
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        if (intent.resolveActivity(packageManager) != null) {
+            startActivityForResult(intent, CAMERA_REQUEST_CODE)
+        } else {
+            Toast.makeText(this, "Камера недоступна", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun setupCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
-            val preview = androidx.camera.core.Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == CAMERA_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                openCamera()
+            } else {
+                Toast.makeText(this, "Разрешение на использование камеры отклонено", Toast.LENGTH_SHORT).show()
             }
-
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview)
-            } catch (exc: Exception) {
-                Log.e(TAG, "Ошибка при привязке камеры", exc)
-            }
-        }, ContextCompat.getMainExecutor(this))
+        }
     }
 
-    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == CAMERA_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            Toast.makeText(this, "Фотография сделана!", Toast.LENGTH_SHORT).show()
+            // Вы можете обработать фотографию из `data.extras.get("data")`
+        }
     }
 
     override fun onDestroy() {
@@ -99,7 +127,5 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
-        private const val REQUEST_CODE_PERMISSIONS = 10
-        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
     }
 }
