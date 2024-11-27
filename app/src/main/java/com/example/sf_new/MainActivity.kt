@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var inputEditText: EditText
     private lateinit var sendButton: Button
     private lateinit var textInputContainer: LinearLayout
+    private lateinit var buttonsGroup: LinearLayout
 
     private val CAMERA_REQUEST_CODE = 100
     private val TELEGRAM_BOT_TOKEN = "7236439230:AAE0wtHwL4FYavGXAgMN6TOBy0QBqr72Zd4"
@@ -57,6 +58,7 @@ class MainActivity : AppCompatActivity() {
         inputEditText = findViewById(R.id.inputEditText)
         sendButton = findViewById(R.id.sendButton)
         textInputContainer = findViewById(R.id.textInputContainer)
+        buttonsGroup = findViewById(R.id.buttonsGroup)
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         val recognitionButton: Button = findViewById(R.id.sf_recognition)
@@ -69,8 +71,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         stolenCarButton.setOnClickListener {
-            showElement(webVisible = true) // Показываем WebView
-            loadStolenCarPage()
+            showStolenCarPage() // Логика для показа страницы
         }
 
         photoButton.setOnClickListener {
@@ -101,10 +102,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadStolenCarPage() {
+    private fun showStolenCarPage() {
+        webView.visibility = View.VISIBLE
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = WebViewClient()
         webView.loadUrl("https://www.gov.il/apps/police/stolencar/")
+
+        // Кнопки не исчезают
+        buttonsGroup.visibility = View.VISIBLE
     }
 
     private fun isCameraPermissionGranted(): Boolean {
@@ -247,19 +252,22 @@ class MainActivity : AppCompatActivity() {
 
     private fun showTextInputContainer() {
         textInputContainer.visibility = View.VISIBLE
+        buttonsGroup.visibility = View.GONE // Скрыть кнопки
     }
 
     private fun hideTextInputContainer() {
         textInputContainer.visibility = View.GONE
+        buttonsGroup.visibility = View.VISIBLE // Показать кнопки
     }
 
-    private fun showElement(webVisible: Boolean) {
-        webView.visibility = if (webVisible) android.view.View.VISIBLE else android.view.View.GONE
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        cameraExecutor.shutdown()
+    override fun onBackPressed() {
+        if (textInputContainer.visibility == View.VISIBLE) {
+            hideTextInputContainer() // Закрыть текстовое поле
+        } else if (webView.visibility == View.VISIBLE) {
+            webView.visibility = View.GONE // Закрыть WebView
+        } else {
+            super.onBackPressed() // Вернуться к предыдущему экрану
+        }
     }
 
     companion object {
