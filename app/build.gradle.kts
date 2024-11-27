@@ -51,6 +51,6 @@ dependencies {
 
     testImplementation (libs.junit)
     androidTestImplementation (libs.androidx.junit.v115)
-    androidTestImplementation (libs.androidx.espresso.core.v351)
+    androidTestImplementation ("androidx.test.espresso:espresso-core:3.5.1")
 
 }

@@ -15,9 +15,7 @@ import android.util.Log
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -36,6 +34,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var responseTextView: TextView
     private lateinit var closeResponseButton: Button
+    private lateinit var openTextInputButton: Button
+    private lateinit var inputEditText: EditText
+    private lateinit var sendButton: Button
+    private lateinit var textInputContainer: LinearLayout
 
     private val CAMERA_REQUEST_CODE = 100
     private val TELEGRAM_BOT_TOKEN = "7236439230:AAE0wtHwL4FYavGXAgMN6TOBy0QBqr72Zd4"
@@ -51,6 +53,10 @@ class MainActivity : AppCompatActivity() {
         webView = findViewById(R.id.webView)
         responseTextView = findViewById(R.id.responseTextView)
         closeResponseButton = findViewById(R.id.closeResponseButton)
+        openTextInputButton = findViewById(R.id.openTextInputButton)
+        inputEditText = findViewById(R.id.inputEditText)
+        sendButton = findViewById(R.id.sendButton)
+        textInputContainer = findViewById(R.id.textInputContainer)
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         val recognitionButton: Button = findViewById(R.id.sf_recognition)
@@ -77,6 +83,21 @@ class MainActivity : AppCompatActivity() {
 
         closeResponseButton.setOnClickListener {
             hideResponseView()
+        }
+
+        openTextInputButton.setOnClickListener {
+            showTextInputContainer()
+        }
+
+        sendButton.setOnClickListener {
+            val text = inputEditText.text.toString()
+            if (text.isNotBlank()) {
+                sendMessageToTelegram(text)
+                inputEditText.text.clear()
+                hideTextInputContainer()
+            } else {
+                Toast.makeText(this, "Введите текст для отправки", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -181,6 +202,36 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
+    private fun sendMessageToTelegram(message: String) {
+        val client = OkHttpClient()
+        val requestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("chat_id", TELEGRAM_CHAT_ID)
+            .addFormDataPart("text", message)
+            .build()
+
+        val request = Request.Builder()
+            .url("https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage")
+            .post(requestBody)
+            .build()
+
+        Thread {
+            try {
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    Log.d(TAG, "Сообщение отправлено: $message")
+                    updateResponseText("Сообщение отправлено успешно!")
+                } else {
+                    Log.e(TAG, "Ошибка отправки сообщения: ${response.message}")
+                    updateResponseText("Ошибка отправки сообщения: ${response.message}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Ошибка отправки сообщения: ${e.message}")
+                updateResponseText("Ошибка отправки сообщения: ${e.message}")
+            }
+        }.start()
+    }
+
     private fun updateResponseText(message: String) {
         runOnUiThread {
             responseTextView.text = message
@@ -192,6 +243,14 @@ class MainActivity : AppCompatActivity() {
     private fun hideResponseView() {
         responseTextView.visibility = View.GONE
         closeResponseButton.visibility = View.GONE
+    }
+
+    private fun showTextInputContainer() {
+        textInputContainer.visibility = View.VISIBLE
+    }
+
+    private fun hideTextInputContainer() {
+        textInputContainer.visibility = View.GONE
     }
 
     private fun showElement(webVisible: Boolean) {

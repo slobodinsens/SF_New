@@ -10,17 +10,19 @@
     android:background="#F3F4F6">
 
     <!-- Верхняя часть для отображения логики кнопок -->
+
     <FrameLayout
         android:id="@+id/logicContainer"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="373dp"
+        android:layout_height="444dp"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="16dp"
         android:background="@drawable/card_background"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/buttonsGroup"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0">
 
         <!-- WebView для отображения сайтов -->
         <WebView
@@ -51,6 +53,36 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         tools:ignore="NotSibling" />
+
+    <!-- Окно для ввода текста -->
+    <LinearLayout
+        android:id="@+id/textInputContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@+id/logicContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <EditText
+            android:id="@+id/inputEditText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Car number text"
+            android:maxLength="8"
+            android:background="@drawable/card_background"
+            android:padding="8dp" />
+
+        <Button
+            android:id="@+id/sendButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Отправить" />
+    </LinearLayout>
 
     <!-- Группа кнопок в нижней части -->
     <LinearLayout
@@ -97,15 +129,20 @@
         </LinearLayout>
 
         <Button
+            android:id="@+id/openTextInputButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Car Number" />
+
+        <Button
             android:id="@+id/closeResponseButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Close"
-            android:visibility="gone"
-            app:layout_constraintTop_toBottomOf="@id/responseTextView"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            android:visibility="gone" />
+
         <!-- Нижний ряд кнопок -->
         <LinearLayout
             android:layout_width="match_parent"

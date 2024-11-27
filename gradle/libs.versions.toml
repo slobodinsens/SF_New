@@ -11,7 +11,6 @@ cameraCoreVersion = "1.5.0"
 cameraLifecycleVersion = "1.5.0"
 constraintlayoutVersion = "2.1.4"
 coreKtxVersion = "1.10.1"
-espressoCoreVersion = "3.5.1"
 guava = "33.3.1-android"
 kotlin = "1.9.24"
 coreKtx = "1.15.0"
@@ -48,7 +47,6 @@ androidx-camera-view-v130 = { module = "androidx.camera:camera-view", version.re
 androidx-constraintlayout-v214 = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayoutVersion" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-ktx-v1101 = { module = "androidx.core:core-ktx", version.ref = "coreKtxVersion" }
-androidx-espresso-core-v351 = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCoreVersion" }
 androidx-junit-v115 = { module = "androidx.test.ext:junit", version.ref = "androidxJunit" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
