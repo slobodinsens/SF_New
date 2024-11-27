@@ -54,6 +54,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         stolenCarButton.setOnClickListener {
+            showElement(webVisible = true) // Показываем WebView
             loadStolenCarPage()
         }
 
@@ -94,17 +95,6 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(intent, CAMERA_REQUEST_CODE)
         } else {
             Toast.makeText(this, "Камера недоступна", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == CAMERA_REQUEST_CODE) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                openCamera()
-            } else {
-                Toast.makeText(this, "Разрешение на использование камеры отклонено", Toast.LENGTH_SHORT).show()
-            }
         }
     }
 
@@ -166,6 +156,10 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, "Ошибка отправки фотографии: ${e.message}")
             }
         }.start()
+    }
+
+    private fun showElement(webVisible: Boolean) {
+        webView.visibility = if (webVisible) android.view.View.VISIBLE else android.view.View.GONE
     }
 
     override fun onDestroy() {
