@@ -32,19 +32,26 @@
             android:name="androidx.camera.defaultConfigProvider"
             android:value="androidx.camera.camera2.Camera2Config" />
 
-        <!-- Camera Activity -->
-        <activity android:name=".CameraActivity" />
+        <!-- Splash Activity -->
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.NoActionBar"> <!-- Заставка без ActionBar -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustPan"> <!-- Здесь добавлено adjustPan -->
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
+
+        <!-- Camera Activity -->
+        <activity android:name=".CameraActivity" />
 
     </application>
 

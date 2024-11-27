@@ -48,6 +48,9 @@ dependencies {
     implementation (libs.androidx.camera.camera2.v130)
     implementation (libs.androidx.camera.core.v130)
     implementation(libs.okhttp)
+    implementation ("com.github.bumptech.glide:glide:4.15.1")
+    annotationProcessor ("com.github.bumptech.glide:compiler:4.15.1")
+
 
     testImplementation (libs.junit)
     androidTestImplementation (libs.androidx.junit.v115)
