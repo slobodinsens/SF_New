@@ -12,9 +12,11 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -32,6 +34,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var webView: WebView
+    private lateinit var responseTextView: TextView
+    private lateinit var closeResponseButton: Button
 
     private val CAMERA_REQUEST_CODE = 100
     private val TELEGRAM_BOT_TOKEN = "7236439230:AAE0wtHwL4FYavGXAgMN6TOBy0QBqr72Zd4"
@@ -45,6 +49,8 @@ class MainActivity : AppCompatActivity() {
 
         // Инициализация
         webView = findViewById(R.id.webView)
+        responseTextView = findViewById(R.id.responseTextView)
+        closeResponseButton = findViewById(R.id.closeResponseButton)
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         val recognitionButton: Button = findViewById(R.id.sf_recognition)
@@ -67,6 +73,10 @@ class MainActivity : AppCompatActivity() {
             } else {
                 requestCameraPermission()
             }
+        }
+
+        closeResponseButton.setOnClickListener {
+            hideResponseView()
         }
     }
 
@@ -155,15 +165,33 @@ class MainActivity : AppCompatActivity() {
         Thread {
             try {
                 val response = client.newCall(request).execute()
+                val responseBody = response.body?.string()
+
                 if (response.isSuccessful) {
-                    Log.d(TAG, "Telegram API Response: ${response.body?.string()}")
+                    Log.d(TAG, "Telegram API Response: $responseBody")
+                    updateResponseText("Фото отправлено успешно: $responseBody")
                 } else {
                     Log.e(TAG, "Ошибка отправки фотографии: ${response.message}")
+                    updateResponseText("Ошибка отправки: ${response.message}")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Ошибка отправки фотографии: ${e.message}")
+                updateResponseText("Ошибка: ${e.message}")
             }
         }.start()
+    }
+
+    private fun updateResponseText(message: String) {
+        runOnUiThread {
+            responseTextView.text = message
+            responseTextView.visibility = View.VISIBLE
+            closeResponseButton.visibility = View.VISIBLE
+        }
+    }
+
+    private fun hideResponseView() {
+        responseTextView.visibility = View.GONE
+        closeResponseButton.visibility = View.GONE
     }
 
     private fun showElement(webVisible: Boolean) {

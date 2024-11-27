@@ -37,6 +37,21 @@
             android:visibility="gone" />
     </FrameLayout>
 
+    <TextView
+        android:id="@+id/responseTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="Ответ от бота будет здесь"
+        android:textSize="16sp"
+        android:visibility="gone"
+        android:background="#E0E0E0"
+        android:padding="8dp"
+        app:layout_constraintTop_toBottomOf="@+id/photo"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:ignore="NotSibling" />
+
     <!-- Группа кнопок в нижней части -->
     <LinearLayout
         android:id="@+id/buttonsGroup"
@@ -81,6 +96,16 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <Button
+            android:id="@+id/closeResponseButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Close"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/responseTextView"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
         <!-- Нижний ряд кнопок -->
         <LinearLayout
             android:layout_width="match_parent"
