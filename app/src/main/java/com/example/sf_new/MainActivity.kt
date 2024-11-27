@@ -1,11 +1,16 @@
+@file:Suppress("DEPRECATION")
+
 package com.example.sf_new
 
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -22,7 +27,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
-import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -34,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private val CAMERA_REQUEST_CODE = 100
     private val TELEGRAM_BOT_TOKEN = "7236439230:AAE0wtHwL4FYavGXAgMN6TOBy0QBqr72Zd4"
     private val TELEGRAM_CHAT_ID = "809706005"
+    private var photoUri: Uri? = null
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,9 +93,21 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    @Suppress("DEPRECATION")
     private fun openCamera() {
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, "photo_${System.currentTimeMillis()}.jpg")
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        }
+
+        photoUri = contentResolver.insert(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            contentValues
+        )
+
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+            putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
+        }
+
         if (intent.resolveActivity(packageManager) != null) {
             startActivityForResult(intent, CAMERA_REQUEST_CODE)
         } else {
@@ -101,31 +118,24 @@ class MainActivity : AppCompatActivity() {
     @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if ((requestCode == CAMERA_REQUEST_CODE) && (resultCode == Activity.RESULT_OK)) {
-            val photoBitmap = data?.extras?.get("data") as? Bitmap
-            if (photoBitmap != null) {
-                val photoFile = saveBitmapToFile(photoBitmap)
-                if (photoFile != null) {
-                    sendPhotoToTelegram(photoFile)
-                }
-            } else {
+        if (requestCode == CAMERA_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            photoUri?.let { uri ->
+                sendPhotoToTelegram(File(getRealPathFromURI(uri)))
+            } ?: run {
                 Toast.makeText(this, "Не удалось сохранить фотографию", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun saveBitmapToFile(bitmap: Bitmap): File? {
-        return try {
-            val file = File.createTempFile("photo", ".jpg", cacheDir)
-            val outputStream = FileOutputStream(file)
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-            outputStream.flush()
-            outputStream.close()
-            file
-        } catch (e: Exception) {
-            Log.e(TAG, "Ошибка сохранения фотографии: ${e.message}")
-            null
+    private fun getRealPathFromURI(uri: Uri): String {
+        var path = ""
+        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val columnIndex = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
+            if (cursor.moveToFirst()) {
+                path = cursor.getString(columnIndex)
+            }
         }
+        return path
     }
 
     private fun sendPhotoToTelegram(file: File) {
