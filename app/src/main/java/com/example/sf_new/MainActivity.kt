@@ -19,10 +19,8 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.util.concurrent.ExecutorService
@@ -41,16 +39,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var buttonsGroup: LinearLayout
 
     private val CAMERA_REQUEST_CODE = 100
-    private val TELEGRAM_BOT_TOKEN = "7236439230:AAE0wtHwL4FYavGXAgMN6TOBy0QBqr72Zd4"
-    private val TELEGRAM_CHAT_ID = "809706005"
     private var photoUri: Uri? = null
+
+    private val SERVER_URL = "https://sensfusionserver-d68b8e068a0b.herokuapp.com/process"
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Инициализация
+        // Initialize views
         webView = findViewById(R.id.webView)
         responseTextView = findViewById(R.id.responseTextView)
         closeResponseButton = findViewById(R.id.closeResponseButton)
@@ -71,7 +69,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         stolenCarButton.setOnClickListener {
-            showStolenCarPage() // Логика для показа страницы
+            showStolenCarPage()
         }
 
         photoButton.setOnClickListener {
@@ -93,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         sendButton.setOnClickListener {
             val text = inputEditText.text.toString()
             if (text.isNotBlank()) {
-                sendMessageToTelegram(text)
+                sendTextToServer(text)
                 inputEditText.text.clear()
                 hideTextInputContainer()
             } else {
@@ -102,13 +100,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     private fun showStolenCarPage() {
         webView.visibility = View.VISIBLE
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = WebViewClient()
         webView.loadUrl("https://www.gov.il/apps/police/stolencar/")
-
-        // Кнопки не исчезают
         buttonsGroup.visibility = View.VISIBLE
     }
 
@@ -154,7 +151,8 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == CAMERA_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             photoUri?.let { uri ->
-                sendPhotoToTelegram(File(getRealPathFromURI(uri)))
+                val file = File(getRealPathFromURI(uri))
+                sendPhotoToServer(file)
             } ?: run {
                 Toast.makeText(this, "Не удалось сохранить фотографию", Toast.LENGTH_SHORT).show()
             }
@@ -172,51 +170,49 @@ class MainActivity : AppCompatActivity() {
         return path
     }
 
-    private fun sendPhotoToTelegram(file: File) {
+    private fun sendPhotoToServer(file: File) {
         val client = OkHttpClient()
         val requestBody = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart("chat_id", TELEGRAM_CHAT_ID)
+            .addFormDataPart("id", "android_app") // Sending as form data
             .addFormDataPart(
-                "photo", file.name,
+                "image",
+                file.name,
                 file.asRequestBody("image/jpeg".toMediaTypeOrNull())
             )
             .build()
 
         val request = Request.Builder()
-            .url("https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendPhoto")
+            .url(SERVER_URL)
             .post(requestBody)
             .build()
 
         Thread {
             try {
                 val response = client.newCall(request).execute()
-                val responseBody = response.body?.string()
-
                 if (response.isSuccessful) {
-                    Log.d(TAG, "Telegram API Response: $responseBody")
-                    updateResponseText("Фото отправлено успешно: $responseBody")
+                    val responseBody = response.body?.string()
+                    updateResponseText("Ответ от сервера: $responseBody")
                 } else {
-                    Log.e(TAG, "Ошибка отправки фотографии: ${response.message}")
-                    updateResponseText("Ошибка отправки: ${response.message}")
+                    updateResponseText("Ошибка: ${response.message}")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Ошибка отправки фотографии: ${e.message}")
-                updateResponseText("Ошибка: ${e.message}")
+                updateResponseText("Ошибка соединения: ${e.message}")
             }
         }.start()
     }
 
-    private fun sendMessageToTelegram(message: String) {
+
+    private fun sendTextToServer(text: String) {
         val client = OkHttpClient()
         val requestBody = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart("chat_id", TELEGRAM_CHAT_ID)
-            .addFormDataPart("text", message)
+            .addFormDataPart("id", "android_app") // Sending as form data
+            .addFormDataPart("text", text)
             .build()
 
         val request = Request.Builder()
-            .url("https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage")
+            .url(SERVER_URL)
             .post(requestBody)
             .build()
 
@@ -224,18 +220,17 @@ class MainActivity : AppCompatActivity() {
             try {
                 val response = client.newCall(request).execute()
                 if (response.isSuccessful) {
-                    Log.d(TAG, "Сообщение отправлено: $message")
-                    updateResponseText("Сообщение отправлено успешно!")
+                    val responseBody = response.body?.string()
+                    updateResponseText("Ответ от сервера: $responseBody")
                 } else {
-                    Log.e(TAG, "Ошибка отправки сообщения: ${response.message}")
-                    updateResponseText("Ошибка отправки сообщения: ${response.message}")
+                    updateResponseText("Ошибка: ${response.message}")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Ошибка отправки сообщения: ${e.message}")
-                updateResponseText("Ошибка отправки сообщения: ${e.message}")
+                updateResponseText("Ошибка соединения: ${e.message}")
             }
         }.start()
     }
+
 
     private fun updateResponseText(message: String) {
         runOnUiThread {
@@ -252,21 +247,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun showTextInputContainer() {
         textInputContainer.visibility = View.VISIBLE
-        buttonsGroup.visibility = View.GONE // Скрыть кнопки
+        buttonsGroup.visibility = View.GONE
     }
 
     private fun hideTextInputContainer() {
         textInputContainer.visibility = View.GONE
-        buttonsGroup.visibility = View.VISIBLE // Показать кнопки
+        buttonsGroup.visibility = View.VISIBLE
     }
 
     override fun onBackPressed() {
         if (textInputContainer.visibility == View.VISIBLE) {
-            hideTextInputContainer() // Закрыть текстовое поле
+            hideTextInputContainer()
         } else if (webView.visibility == View.VISIBLE) {
-            webView.visibility = View.GONE // Закрыть WebView
+            webView.visibility = View.GONE
         } else {
-            super.onBackPressed() // Вернуться к предыдущему экрану
+            super.onBackPressed()
         }
     }
 
