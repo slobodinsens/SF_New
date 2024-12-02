@@ -8,20 +8,21 @@
     tools:context=".SplashActivity">
 
     <ImageView
-        android:id="@+id/imageView"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:contentDescription="@string/image_desc"
-        android:visibility="gone" />
+        android:id="@+id/gifimageView"
+        android:layout_width="37dp"
+        android:layout_height="22dp"
+        android:contentDescription="@string/received_image_desc"
+        android:visibility="invisible"
+        tools:ignore="MissingConstraints" />
 
     <!-- ImageView for displaying received photo -->
     <ImageView
-        android:id="@+id/receivedPhotoImageView"
+        android:id="@+id/gifImageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:contentDescription="@string/received_image_desc"
         android:scaleType="centerCrop"
-        android:contentDescription="@string/image_desc"
-        android:visibility="gone" />
+        android:visibility="visible" />
 
     <!-- Add any other UI components for the splash activity here -->
 
