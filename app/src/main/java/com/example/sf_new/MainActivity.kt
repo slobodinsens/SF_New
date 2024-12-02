@@ -225,9 +225,11 @@ class MainActivity : AppCompatActivity() {
             receivedImageView.setImageURI(Uri.fromFile(File(absolutePath)))
             receivedImageView.visibility = View.VISIBLE
             closeResponseButton.visibility = View.VISIBLE
-            buttonsGroup.visibility = View.GONE
+            // Keep buttons visible
+            buttonsGroup.visibility = View.VISIBLE
         }
     }
+
 
     private fun hideImageView() {
         receivedImageView.visibility = View.GONE
