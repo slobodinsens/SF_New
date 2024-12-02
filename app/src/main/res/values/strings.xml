@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">SF_New</string>
     <string name="logo_description">Sensfusion Logo</string>
-    <string name="image_desc">Displayed image</string>
-    <string name="gif_desc">GIF Image Description</string>
+    <string name="received_image_desc">Received Image</string>
 </resources>

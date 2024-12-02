@@ -11,7 +11,6 @@
 
     <!-- Логотип -->
 
-
     <!-- Верхняя часть для отображения логики кнопок -->
 
     <FrameLayout
@@ -28,16 +27,6 @@
         app:layout_constraintVertical_bias="0.0">
 
         <!-- WebView для отображения сайтов -->
-
-        <ImageView
-            android:id="@+id/logoImageView"
-            android:layout_width="389dp"
-            android:layout_height="337dp"
-            android:layout_marginTop="16dp"
-            android:background="@drawable/sensfusion_logo"
-            android:contentDescription="@string/logo_description"
-            android:src="@drawable/sensfusion_logo" />
-
         <WebView
             android:id="@+id/webView"
             android:layout_width="match_parent"
@@ -50,6 +39,35 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone" />
+
+        <!-- ImageView для отображения полученного фото -->
+        <ImageView
+            android:id="@+id/receivedImageView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerInside"
+            android:visibility="gone"
+            android:contentDescription="@string/received_image_desc" />
+
+        <!-- Кнопка закрытия фото -->
+        <Button
+            android:id="@+id/closeImageButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="16dp"
+            android:visibility="gone"
+            android:text="Close"
+            android:backgroundTint="#FF5722"
+            android:textColor="#FFFFFF" />
+
+        <ImageView
+            android:id="@+id/imageView4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/sensfusion_logo" />
+
+
     </FrameLayout>
 
     <TextView
@@ -100,30 +118,32 @@
     <!-- Группа кнопок в нижней части -->
     <LinearLayout
         android:id="@+id/buttonsGroup"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_width="365dp"
+        android:layout_height="213dp"
         android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="16dp"
-        android:orientation="vertical"
+        android:layout_marginBottom="36dp"
         android:gravity="center"
+        android:orientation="vertical"
         android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.347"
+        app:layout_constraintStart_toStartOf="parent">
 
         <!-- Верхний ряд кнопок -->
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
+            android:gravity="center"
+            android:orientation="horizontal">
 
             <Button
                 android:id="@+id/sf_recognition"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_margin="8dp"
+                android:layout_weight="1"
                 android:backgroundTint="#6200EA"
                 android:text="AI-Recognition"
                 android:textColor="#FFFFFF"
@@ -133,8 +153,8 @@
                 android:id="@+id/stolen_car"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_margin="8dp"
+                android:layout_weight="1"
                 android:backgroundTint="#03A9F4"
                 android:text="Stolen Car"
                 android:textColor="#FFFFFF"
@@ -152,38 +172,45 @@
             android:id="@+id/closeResponseButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
             android:text="Close"
-            android:visibility="gone" />
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <!-- Нижний ряд кнопок -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
+            android:gravity="center"
+            android:orientation="horizontal">
 
             <Button
                 android:id="@+id/settings"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_margin="8dp"
+                android:layout_weight="1"
                 android:backgroundTint="#FF5722"
+                android:minHeight="48dp"
                 android:text="Settings"
                 android:textColor="#FFFFFF"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:ignore="TouchTargetSizeCheck" />
 
             <Button
                 android:id="@+id/photo"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_margin="8dp"
+                android:layout_weight="1"
                 android:backgroundTint="#4CAF50"
+                android:minHeight="48dp"
                 android:text="Photo"
                 android:textColor="#FFFFFF"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:ignore="TouchTargetSizeCheck" />
         </LinearLayout>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -19,7 +19,6 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.bumptech.glide.Glide
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -39,7 +38,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sendButton: Button
     private lateinit var textInputContainer: LinearLayout
     private lateinit var buttonsGroup: LinearLayout
-    private lateinit var gifImageView: ImageView // Added gifImageView initialization
+    private lateinit var receivedImageView: ImageView
 
     private val CAMERA_REQUEST_CODE = 100
     private var photoUri: Uri? = null
@@ -60,7 +59,7 @@ class MainActivity : AppCompatActivity() {
         sendButton = findViewById(R.id.sendButton)
         textInputContainer = findViewById(R.id.textInputContainer)
         buttonsGroup = findViewById(R.id.buttonsGroup)
-        gifImageView = findViewById(R.id.gifImageView) // Initialize gifImageView
+        receivedImageView = findViewById(R.id.receivedImageView)
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         val recognitionButton: Button = findViewById(R.id.sf_recognition)
@@ -85,7 +84,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         closeResponseButton.setOnClickListener {
-            hideResponseView()
+            when {
+                receivedImageView.visibility == View.VISIBLE -> hideImageView()
+                responseTextView.visibility == View.VISIBLE -> hideResponseView()
+                webView.visibility == View.VISIBLE -> {
+                    webView.visibility = View.GONE
+                    closeResponseButton.visibility = View.GONE
+                }
+            }
         }
 
         openTextInputButton.setOnClickListener {
@@ -102,12 +108,6 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Введите текст для отправки", Toast.LENGTH_SHORT).show()
             }
         }
-
-        // Load GIF into gifImageView using Glide
-        Glide.with(this)
-            .asGif()
-            .load(R.drawable.your_gif_file) // Replace with your GIF resource
-            .into(gifImageView)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -116,10 +116,152 @@ class MainActivity : AppCompatActivity() {
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = WebViewClient()
         webView.loadUrl("https://www.gov.il/apps/police/stolencar/")
+        closeResponseButton.visibility = View.VISIBLE
+    }
+
+    private fun isCameraPermissionGranted(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestCameraPermission() {
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.CAMERA),
+            CAMERA_REQUEST_CODE
+        )
+    }
+
+    private fun openCamera() {
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, "photo_${System.currentTimeMillis()}.jpg")
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        }
+
+        photoUri = contentResolver.insert(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            contentValues
+        )
+
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+            putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
+        }
+
+        if (intent.resolveActivity(packageManager) != null) {
+            startActivityForResult(intent, CAMERA_REQUEST_CODE)
+        } else {
+            Toast.makeText(this, "Камера недоступна", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == CAMERA_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            photoUri?.let { uri ->
+                val file = File(getRealPathFromURI(uri))
+                sendPhotoToServer(file)
+            } ?: run {
+                Toast.makeText(this, "Не удалось сохранить фотографию", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun getRealPathFromURI(uri: Uri): String {
+        var path = ""
+        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val columnIndex = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
+            if (cursor.moveToFirst()) {
+                path = cursor.getString(columnIndex)
+            }
+        }
+        return path
+    }
+
+    private fun sendPhotoToServer(file: File) {
+        val client = OkHttpClient()
+        val requestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("id", "android_app")
+            .addFormDataPart(
+                "image",
+                file.name,
+                file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+            )
+            .build()
+
+        val request = Request.Builder()
+            .url(SERVER_URL)
+            .post(requestBody)
+            .build()
+
+        Thread {
+            try {
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val responseBody = response.body
+                    if (responseBody != null && response.header("Content-Type")?.contains("image") == true) {
+                        val receivedImageFile = File(getExternalFilesDir(null), "received_image.jpg")
+                        FileOutputStream(receivedImageFile).use { output ->
+                            output.write(responseBody.bytes())
+                        }
+                        updateResponseTextWithImage(receivedImageFile.absolutePath)
+                    } else {
+                        responseBody?.string()?.let { updateResponseText(it) }
+                    }
+                } else {
+                    updateResponseText("Ошибка: ${response.message}")
+                }
+            } catch (e: Exception) {
+                updateResponseText("Ошибка соединения: ${e.message}")
+            }
+        }.start()
+    }
+
+    private fun updateResponseTextWithImage(absolutePath: String) {
+        runOnUiThread {
+            receivedImageView.setImageURI(Uri.fromFile(File(absolutePath)))
+            receivedImageView.visibility = View.VISIBLE
+            closeResponseButton.visibility = View.VISIBLE
+            buttonsGroup.visibility = View.GONE
+        }
+    }
+
+    private fun hideImageView() {
+        receivedImageView.visibility = View.GONE
+        closeResponseButton.visibility = View.GONE
         buttonsGroup.visibility = View.VISIBLE
     }
 
-    // Other existing methods ...
+    private fun sendTextToServer(text: String) {
+        val client = OkHttpClient()
+        val requestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("id", "android_app")
+            .addFormDataPart("text", text)
+            .build()
+
+        val request = Request.Builder()
+            .url(SERVER_URL)
+            .post(requestBody)
+            .build()
+
+        Thread {
+            try {
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string()
+                    updateResponseText("Ответ от сервера: $responseBody")
+                } else {
+                    updateResponseText("Ошибка: ${response.message}")
+                }
+            } catch (e: Exception) {
+                updateResponseText("Ошибка соединения: ${e.message}")
+            }
+        }.start()
+    }
 
     private fun updateResponseText(message: String) {
         runOnUiThread {
@@ -145,7 +287,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (textInputContainer.visibility == View.VISIBLE) {
+        if (receivedImageView.visibility == View.VISIBLE) {
+            hideImageView()
+        } else if (textInputContainer.visibility == View.VISIBLE) {
             hideTextInputContainer()
         } else if (webView.visibility == View.VISIBLE) {
             webView.visibility = View.GONE
