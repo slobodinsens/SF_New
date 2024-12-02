@@ -30,9 +30,14 @@
     <!-- WebView for displaying websites -->
     <WebView
         android:id="@+id/webView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone" />
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="@+id/logicContainer"
+        app:layout_constraintBottom_toBottomOf="@+id/logicContainer"
+        app:layout_constraintStart_toStartOf="@+id/logicContainer"
+        app:layout_constraintEnd_toEndOf="@+id/logicContainer" />
+
 
     <!-- PreviewView for the camera -->
     <androidx.camera.view.PreviewView
