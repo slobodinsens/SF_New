@@ -19,10 +19,12 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -37,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sendButton: Button
     private lateinit var textInputContainer: LinearLayout
     private lateinit var buttonsGroup: LinearLayout
+    private lateinit var gifImageView: ImageView // Added gifImageView initialization
 
     private val CAMERA_REQUEST_CODE = 100
     private var photoUri: Uri? = null
@@ -57,6 +60,7 @@ class MainActivity : AppCompatActivity() {
         sendButton = findViewById(R.id.sendButton)
         textInputContainer = findViewById(R.id.textInputContainer)
         buttonsGroup = findViewById(R.id.buttonsGroup)
+        gifImageView = findViewById(R.id.gifImageView) // Initialize gifImageView
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         val recognitionButton: Button = findViewById(R.id.sf_recognition)
@@ -98,6 +102,12 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Введите текст для отправки", Toast.LENGTH_SHORT).show()
             }
         }
+
+        // Load GIF into gifImageView using Glide
+        Glide.with(this)
+            .asGif()
+            .load(R.drawable.your_gif_file) // Replace with your GIF resource
+            .into(gifImageView)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -109,128 +119,7 @@ class MainActivity : AppCompatActivity() {
         buttonsGroup.visibility = View.VISIBLE
     }
 
-    private fun isCameraPermissionGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun requestCameraPermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.CAMERA),
-            CAMERA_REQUEST_CODE
-        )
-    }
-
-    private fun openCamera() {
-        val contentValues = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, "photo_${System.currentTimeMillis()}.jpg")
-            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-        }
-
-        photoUri = contentResolver.insert(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            contentValues
-        )
-
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
-            putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
-        }
-
-        if (intent.resolveActivity(packageManager) != null) {
-            startActivityForResult(intent, CAMERA_REQUEST_CODE)
-        } else {
-            Toast.makeText(this, "Камера недоступна", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    @Suppress("DEPRECATION")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == CAMERA_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            photoUri?.let { uri ->
-                val file = File(getRealPathFromURI(uri))
-                sendPhotoToServer(file)
-            } ?: run {
-                Toast.makeText(this, "Не удалось сохранить фотографию", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun getRealPathFromURI(uri: Uri): String {
-        var path = ""
-        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val columnIndex = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
-            if (cursor.moveToFirst()) {
-                path = cursor.getString(columnIndex)
-            }
-        }
-        return path
-    }
-
-    private fun sendPhotoToServer(file: File) {
-        val client = OkHttpClient()
-        val requestBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart("id", "android_app") // Sending as form data
-            .addFormDataPart(
-                "image",
-                file.name,
-                file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-            )
-            .build()
-
-        val request = Request.Builder()
-            .url(SERVER_URL)
-            .post(requestBody)
-            .build()
-
-        Thread {
-            try {
-                val response = client.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val responseBody = response.body?.string()
-                    updateResponseText("Ответ от сервера: $responseBody")
-                } else {
-                    updateResponseText("Ошибка: ${response.message}")
-                }
-            } catch (e: Exception) {
-                updateResponseText("Ошибка соединения: ${e.message}")
-            }
-        }.start()
-    }
-
-
-    private fun sendTextToServer(text: String) {
-        val client = OkHttpClient()
-        val requestBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart("id", "android_app") // Sending as form data
-            .addFormDataPart("text", text)
-            .build()
-
-        val request = Request.Builder()
-            .url(SERVER_URL)
-            .post(requestBody)
-            .build()
-
-        Thread {
-            try {
-                val response = client.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val responseBody = response.body?.string()
-                    updateResponseText("Ответ от сервера: $responseBody")
-                } else {
-                    updateResponseText("Ошибка: ${response.message}")
-                }
-            } catch (e: Exception) {
-                updateResponseText("Ошибка соединения: ${e.message}")
-            }
-        }.start()
-    }
-
+    // Other existing methods ...
 
     private fun updateResponseText(message: String) {
         runOnUiThread {

@@ -1,14 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    tools:context=".SplashActivity">
 
     <ImageView
-        android:id="@+id/gifImageView"
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:contentDescription="@string/image_desc"
+        android:visibility="gone" />
+
+    <!-- ImageView for displaying received photo -->
+    <ImageView
+        android:id="@+id/receivedPhotoImageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="centerCrop" />
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/image_desc"
+        android:visibility="gone" />
+
+    <!-- Add any other UI components for the splash activity here -->
 
 </androidx.constraintlayout.widget.ConstraintLayout>
