@@ -12,6 +12,7 @@ cameraLifecycleVersion = "1.5.0"
 constraintlayoutVersion = "2.1.4"
 coreKtxVersion = "1.10.1"
 guava = "33.3.1-android"
+guavaVersion = "31.1-jre"
 kotlin = "1.9.24"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -32,6 +33,7 @@ playServicesMapsVersion = "18.0.2"
 supportAnnotations = "28.0.0"
 cameraView = "1.4.0"
 supportVectorDrawable = "28.0.0"
+compiler = "3.2.0-alpha11"
 
 [libraries]
 androidx-appcompat-v161 = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
@@ -49,6 +51,7 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 androidx-core-ktx-v1101 = { module = "androidx.core:core-ktx", version.ref = "coreKtxVersion" }
 androidx-junit-v115 = { module = "androidx.test.ext:junit", version.ref = "androidxJunit" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
+guava-v311jre = { module = "com.google.guava:guava", version.ref = "guavaVersion" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -67,6 +70,7 @@ play-services-maps-v1802 = { module = "com.google.android.gms:play-services-maps
 support-annotations = { group = "com.android.support", name = "support-annotations", version.ref = "supportAnnotations" }
 camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraView" }
 support-vector-drawable = { group = "com.android.support", name = "support-vector-drawable", version.ref = "supportVectorDrawable" }
+androidx-compiler = { group = "androidx.databinding", name = "compiler", version.ref = "compiler" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

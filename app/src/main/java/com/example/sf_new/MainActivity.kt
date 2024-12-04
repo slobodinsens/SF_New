@@ -5,25 +5,35 @@ package com.example.sf_new
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
-import android.util.Log
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
-import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -101,7 +111,6 @@ class MainActivity : AppCompatActivity() {
         sendButton.setOnClickListener {
             val text = inputEditText.text.toString()
             if (text.isNotBlank()) {
-                sendTextToServer(text)
                 inputEditText.text.clear()
                 hideTextInputContainer()
             } else {
@@ -155,6 +164,47 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Камера недоступна", Toast.LENGTH_SHORT).show()
         }
     }
+    private fun showNotification(title: String, message: String) {
+        val channelId = "server_notifications"
+        val channelName = "Server Notifications"
+
+        // Create Notification Manager
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        // Create Notification Channel (For Android O and above)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                channelName,
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        // Create Intent for notification click
+        val intent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Build Notification
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.ic_notification) // Use your app's notification icon
+            .setContentTitle(title)
+            .setContentText(message)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        // Show Notification
+        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
+    }
+
+
 
     @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -180,16 +230,12 @@ class MainActivity : AppCompatActivity() {
         return path
     }
 
-    private fun sendPhotoToServer(file: File) {
+    private fun sendTextToServer(text: String) {
         val client = OkHttpClient()
         val requestBody = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("id", "android_app")
-            .addFormDataPart(
-                "image",
-                file.name,
-                file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-            )
+            .addFormDataPart("text", text)
             .build()
 
         val request = Request.Builder()
@@ -201,16 +247,9 @@ class MainActivity : AppCompatActivity() {
             try {
                 val response = client.newCall(request).execute()
                 if (response.isSuccessful) {
-                    val responseBody = response.body
-                    if (responseBody != null && response.header("Content-Type")?.contains("image") == true) {
-                        val receivedImageFile = File(getExternalFilesDir(null), "received_image.jpg")
-                        FileOutputStream(receivedImageFile).use { output ->
-                            output.write(responseBody.bytes())
-                        }
-                        updateResponseTextWithImage(receivedImageFile.absolutePath)
-                    } else {
-                        responseBody?.string()?.let { updateResponseText(it) }
-                    }
+                    val responseBody = response.body?.string() ?: "No response"
+                    updateResponseText(responseBody)
+                    showNotification("Server Response", responseBody)
                 } else {
                     updateResponseText("Ошибка: ${response.message}")
                 }
@@ -219,6 +258,35 @@ class MainActivity : AppCompatActivity() {
             }
         }.start()
     }
+    private fun sendPhotoToServer(file: File) {
+        val client = OkHttpClient()
+        val requestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("id", "android_app")
+            .addFormDataPart("image", file.name, file.asRequestBody("image/jpeg".toMediaTypeOrNull()))
+            .build()
+
+        val request = Request.Builder()
+            .url(SERVER_URL)
+            .post(requestBody)
+            .build()
+
+        Thread {
+            try {
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string() ?: "Photo received"
+                    updateResponseText(responseBody)
+                    showNotification("Photo Response", responseBody)
+                } else {
+                    updateResponseText("Ошибка: ${response.message}")
+                }
+            } catch (e: Exception) {
+                updateResponseText("Ошибка соединения: ${e.message}")
+            }
+        }.start()
+    }
+
 
     private fun updateResponseTextWithImage(absolutePath: String) {
         runOnUiThread {
@@ -237,33 +305,7 @@ class MainActivity : AppCompatActivity() {
         buttonsGroup.visibility = View.VISIBLE
     }
 
-    private fun sendTextToServer(text: String) {
-        val client = OkHttpClient()
-        val requestBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart("id", "android_app")
-            .addFormDataPart("text", text)
-            .build()
 
-        val request = Request.Builder()
-            .url(SERVER_URL)
-            .post(requestBody)
-            .build()
-
-        Thread {
-            try {
-                val response = client.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val responseBody = response.body?.string()
-                    updateResponseText("Ответ от сервера: $responseBody")
-                } else {
-                    updateResponseText("Ошибка: ${response.message}")
-                }
-            } catch (e: Exception) {
-                updateResponseText("Ошибка соединения: ${e.message}")
-            }
-        }.start()
-    }
 
     private fun updateResponseText(message: String) {
         runOnUiThread {
