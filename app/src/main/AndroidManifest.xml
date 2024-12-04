@@ -20,7 +20,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SF_New"
         android:icon="@drawable/sf_recognition"
-        tools:targetApi="31">
+        tools:targetApi="31"
+        tools:ignore="ExtraText"
+        android:networkSecurityConfig="@xml/network_security_config">
+
+        
 
         <!-- AdMob App ID -->
         <meta-data
@@ -31,6 +35,7 @@
         <meta-data
             android:name="androidx.camera.defaultConfigProvider"
             android:value="androidx.camera.camera2.Camera2Config" />
+
 
         <!-- Splash Activity -->
         <activity
@@ -52,6 +57,7 @@
 
         <!-- Camera Activity -->
         <activity android:name=".CameraActivity" />
+
 
     </application>
 

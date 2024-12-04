@@ -43,7 +43,7 @@ class MainActivity : AppCompatActivity() {
     private val CAMERA_REQUEST_CODE = 100
     private var photoUri: Uri? = null
 
-    private val SERVER_URL = "https://sensfusionserver-d68b8e068a0b.herokuapp.com/process"
+    private val SERVER_URL = "http://10.0.0.43:5000"
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
