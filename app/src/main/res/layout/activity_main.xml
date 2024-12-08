@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity"
     android:background="#F3F4F6"
+    tools:context=".MainActivity"
     tools:ignore="ExtraText">
 
     <!-- Логотип -->
@@ -30,14 +29,11 @@
     <!-- WebView for displaying websites -->
     <WebView
         android:id="@+id/webView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="407dp"
+        android:layout_height="433dp"
         android:visibility="gone"
-        app:layout_constraintTop_toTopOf="@+id/logicContainer"
-        app:layout_constraintBottom_toBottomOf="@+id/logicContainer"
-        app:layout_constraintStart_toStartOf="@+id/logicContainer"
-        app:layout_constraintEnd_toEndOf="@+id/logicContainer" />
-
+        tools:layout_editor_absoluteX="4dp"
+        tools:ignore="MissingConstraints" />
 
     <!-- PreviewView for the camera -->
     <androidx.camera.view.PreviewView
@@ -55,16 +51,13 @@
         android:contentDescription="@string/received_image_desc"
         android:scaleType="centerInside"
         android:visibility="gone"
-        app:layout_constraintTop_toTopOf="@+id/logicContainer"
         app:layout_constraintBottom_toBottomOf="@+id/logicContainer"
+        app:layout_constraintEnd_toEndOf="@+id/logicContainer"
         app:layout_constraintStart_toStartOf="@+id/logicContainer"
-        app:layout_constraintEnd_toEndOf="@+id/logicContainer" />
-
+        app:layout_constraintTop_toTopOf="@+id/logicContainer" />
 
 
     <!-- Кнопка закрытия фото -->
-
-
 
 
     <TextView
@@ -72,36 +65,37 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:text="Ответ от бота будет здесь"
-        android:textSize="16sp"
-        android:visibility="gone"
         android:background="#E0E0E0"
         android:padding="8dp"
-        app:layout_constraintTop_toBottomOf="@+id/photo"
-        app:layout_constraintStart_toStartOf="parent"
+        android:textSize="16sp"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/photo"
         tools:ignore="NotSibling" />
 
     <!-- Окно для ввода текста -->
+
     <LinearLayout
         android:id="@+id/textInputContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_width="409dp"
+        android:layout_height="139dp"
         android:layout_margin="16dp"
         android:orientation="horizontal"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@+id/logicContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toBottomOf="@+id/logicContainer">
 
         <EditText
             android:id="@+id/inputEditText"
-            android:layout_width="0dp"
+            android:layout_width="171dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="@drawable/card_background"
             android:hint="Car number text"
             android:maxLength="8"
-            android:background="@drawable/card_background"
             android:padding="8dp" />
 
         <Button
@@ -109,7 +103,20 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="send" />
+            android:layout_weight="10"
+            android:text=" Send Number" />
+
+        <Button
+            android:id="@+id/selectPictureButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="10"
+            android:backgroundTint="#03A9F4"
+            android:text="Choose Picture"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            tools:ignore="TouchTargetSizeCheck" />
+
     </LinearLayout>
 
     <!-- Группа кнопок в нижней части -->
@@ -122,23 +129,13 @@
         android:gravity="center"
         android:orientation="vertical"
         android:padding="16dp"
+        android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.347"
         app:layout_constraintStart_toStartOf="parent">
 
         <!-- Верхний ряд кнопок -->
-
-        <Button
-            android:id="@+id/closeImageButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_margin="16dp"
-            android:backgroundTint="#FF5722"
-            android:text="Close"
-            android:textColor="#FFFFFF"
-            android:visibility="gone" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -219,7 +216,19 @@
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
                 tools:ignore="TouchTargetSizeCheck" />
+
+            <Button
+                android:id="@+id/closeImageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_margin="16dp"
+                android:backgroundTint="#FF5722"
+                android:text="Close"
+                android:textColor="#FFFFFF"
+                android:visibility="gone" />
         </LinearLayout>
 
     </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

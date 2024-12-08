@@ -5,35 +5,29 @@ package com.example.sf_new
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
+import android.app.AlertDialog
+import android.content.ContentResolver
 import android.content.ContentValues
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -51,9 +45,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var receivedImageView: ImageView
 
     private val CAMERA_REQUEST_CODE = 100
+    private val SELECT_PICTURE_REQUEST_CODE = 101
+    private val READ_STORAGE_PERMISSION_CODE = 102
     private var photoUri: Uri? = null
-
-    private val SERVER_URL = "http://10.0.0.43:5000"
+    private val SERVER_URL = "http://10.0.0.43:5000/process"
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,6 +70,16 @@ class MainActivity : AppCompatActivity() {
         val recognitionButton: Button = findViewById(R.id.sf_recognition)
         val stolenCarButton: Button = findViewById(R.id.stolen_car)
         val photoButton: Button = findViewById(R.id.photo)
+        val selectPictureButton: Button = findViewById(R.id.selectPictureButton)
+
+        // Add click listener for selectPictureButton
+        selectPictureButton.setOnClickListener {
+            if (isReadStoragePermissionGranted()) {
+                showPhotosPopup()
+            } else {
+                requestReadStoragePermission()
+            }
+        }
 
         recognitionButton.setOnClickListener {
             val intent = Intent(this, CameraActivity::class.java)
@@ -86,10 +91,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         photoButton.setOnClickListener {
-            if (isCameraPermissionGranted()) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                 openCamera()
             } else {
-                requestCameraPermission()
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.CAMERA),
+                    CAMERA_REQUEST_CODE
+                )
             }
         }
 
@@ -111,12 +120,19 @@ class MainActivity : AppCompatActivity() {
         sendButton.setOnClickListener {
             val text = inputEditText.text.toString()
             if (text.isNotBlank()) {
+                sendTextToServer(text)
                 inputEditText.text.clear()
                 hideTextInputContainer()
             } else {
                 Toast.makeText(this, "Введите текст для отправки", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun openGallery() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        intent.type = "image/*"
+        startActivityForResult(intent, SELECT_PICTURE_REQUEST_CODE)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -126,21 +142,6 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = WebViewClient()
         webView.loadUrl("https://www.gov.il/apps/police/stolencar/")
         closeResponseButton.visibility = View.VISIBLE
-    }
-
-    private fun isCameraPermissionGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun requestCameraPermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.CAMERA),
-            CAMERA_REQUEST_CODE
-        )
     }
 
     private fun openCamera() {
@@ -164,71 +165,6 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Камера недоступна", Toast.LENGTH_SHORT).show()
         }
     }
-    private fun showNotification(title: String, message: String) {
-        val channelId = "server_notifications"
-        val channelName = "Server Notifications"
-
-        // Create Notification Manager
-        val notificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        // Create Notification Channel (For Android O and above)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                channelName,
-                NotificationManager.IMPORTANCE_HIGH
-            )
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        // Create Intent for notification click
-        val intent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Build Notification
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_notification) // Use your app's notification icon
-            .setContentTitle(title)
-            .setContentText(message)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .build()
-
-        // Show Notification
-        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
-    }
-
-
-
-    @Suppress("DEPRECATION")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == CAMERA_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            photoUri?.let { uri ->
-                val file = File(getRealPathFromURI(uri))
-                sendPhotoToServer(file)
-            } ?: run {
-                Toast.makeText(this, "Не удалось сохранить фотографию", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun getRealPathFromURI(uri: Uri): String {
-        var path = ""
-        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val columnIndex = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
-            if (cursor.moveToFirst()) {
-                path = cursor.getString(columnIndex)
-            }
-        }
-        return path
-    }
 
     private fun sendTextToServer(text: String) {
         val client = OkHttpClient()
@@ -247,37 +183,8 @@ class MainActivity : AppCompatActivity() {
             try {
                 val response = client.newCall(request).execute()
                 if (response.isSuccessful) {
-                    val responseBody = response.body?.string() ?: "No response"
-                    updateResponseText(responseBody)
-                    showNotification("Server Response", responseBody)
-                } else {
-                    updateResponseText("Ошибка: ${response.message}")
-                }
-            } catch (e: Exception) {
-                updateResponseText("Ошибка соединения: ${e.message}")
-            }
-        }.start()
-    }
-    private fun sendPhotoToServer(file: File) {
-        val client = OkHttpClient()
-        val requestBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart("id", "android_app")
-            .addFormDataPart("image", file.name, file.asRequestBody("image/jpeg".toMediaTypeOrNull()))
-            .build()
-
-        val request = Request.Builder()
-            .url(SERVER_URL)
-            .post(requestBody)
-            .build()
-
-        Thread {
-            try {
-                val response = client.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val responseBody = response.body?.string() ?: "Photo received"
-                    updateResponseText(responseBody)
-                    showNotification("Photo Response", responseBody)
+                    val responseBody = response.body?.string()
+                    updateResponseText("Ответ от сервера: $responseBody")
                 } else {
                     updateResponseText("Ошибка: ${response.message}")
                 }
@@ -287,25 +194,96 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
+    private fun hideResponseView() {
+        responseTextView.visibility = View.GONE
+        closeResponseButton.visibility = View.GONE
+    }
 
-    private fun updateResponseTextWithImage(absolutePath: String) {
-        runOnUiThread {
-            receivedImageView.setImageURI(Uri.fromFile(File(absolutePath)))
-            receivedImageView.visibility = View.VISIBLE
-            closeResponseButton.visibility = View.VISIBLE
-            // Keep buttons visible
-            buttonsGroup.visibility = View.VISIBLE
+    private fun isReadStoragePermissionGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_MEDIA_IMAGES
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
         }
     }
 
-
-    private fun hideImageView() {
-        receivedImageView.visibility = View.GONE
-        closeResponseButton.visibility = View.GONE
-        buttonsGroup.visibility = View.VISIBLE
+    private fun requestReadStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.READ_MEDIA_IMAGES),
+                READ_STORAGE_PERMISSION_CODE
+            )
+        } else {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                READ_STORAGE_PERMISSION_CODE
+            )
+        }
     }
 
+    private fun showPhotosPopup() {
+        val imageUris = fetchImagesFromStorage(contentResolver)
 
+        if (imageUris.isEmpty()) {
+            Toast.makeText(this, "No photos found", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_photos_grid, null)
+        val gridView: GridView = dialogView.findViewById(R.id.gridViewPhotos)
+
+        val adapter = ImageAdapter(this, imageUris)
+        gridView.adapter = adapter
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setTitle("Select a Photo")
+            .setNegativeButton("Close", null)
+            .create()
+
+        gridView.setOnItemClickListener { _, _, position, _ ->
+            dialog.dismiss()
+            val selectedImageUri = imageUris[position]
+            displaySelectedPhoto(selectedImageUri)
+        }
+
+        dialog.show()
+    }
+
+    private fun fetchImagesFromStorage(contentResolver: ContentResolver): List<Uri> {
+        val imageUris = mutableListOf<Uri>()
+
+        val projection = arrayOf(MediaStore.Images.Media._ID)
+        val queryUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
+
+        val cursor = contentResolver.query(queryUri, projection, null, null, sortOrder)
+
+        cursor?.use {
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+
+            while (cursor.moveToNext()) {
+                val id = cursor.getLong(idColumn)
+                val contentUri = Uri.withAppendedPath(queryUri, id.toString())
+                imageUris.add(contentUri)
+            }
+        }
+
+        return imageUris
+    }
+
+    private fun displaySelectedPhoto(imageUri: Uri) {
+        receivedImageView.setImageURI(imageUri)
+        receivedImageView.visibility = View.VISIBLE
+    }
 
     private fun updateResponseText(message: String) {
         runOnUiThread {
@@ -315,9 +293,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun hideResponseView() {
-        responseTextView.visibility = View.GONE
+    @SuppressLint("MissingSuperCall")
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        if (requestCode == READ_STORAGE_PERMISSION_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                showPhotosPopup()
+            } else {
+                Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun hideImageView() {
+        receivedImageView.visibility = View.GONE
         closeResponseButton.visibility = View.GONE
+        buttonsGroup.visibility = View.VISIBLE
     }
 
     private fun showTextInputContainer() {
@@ -340,9 +334,5 @@ class MainActivity : AppCompatActivity() {
         } else {
             super.onBackPressed()
         }
-    }
-
-    companion object {
-        private const val TAG = "MainActivity"
     }
 }
