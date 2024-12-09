@@ -28,7 +28,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.sf_new.EmailPasswordActivity
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -53,7 +52,7 @@ class MainActivity : AppCompatActivity() {
     private val SELECT_PICTURE_REQUEST_CODE = 101
     private val READ_STORAGE_PERMISSION_CODE = 102
     private var photoUri: Uri? = null
-    private val SERVER_URL = "http://10.0.0.43:5000/process"
+    private val SERVER_URL = "http://192.168.1.108:5000/process"
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
