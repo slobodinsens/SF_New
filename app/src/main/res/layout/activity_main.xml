@@ -202,7 +202,7 @@
                 android:text="Settings"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
-                tools:ignore="TouchTargetSizeCheck" />
+                tools:ignore="ButtonStyle,HardcodedText,TouchTargetSizeCheck" />
 
             <Button
                 android:id="@+id/photo"

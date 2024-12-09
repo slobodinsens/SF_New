@@ -5,7 +5,6 @@ package com.example.sf_new
 import ImageAdapter
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.ContentResolver
 import android.content.ContentValues
@@ -15,22 +14,27 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.GridView
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import okhttp3.*
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.asRequestBody
-import java.io.File
-import java.io.FileOutputStream
+import com.example.app.EmailPasswordActivity
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -68,11 +72,17 @@ class MainActivity : AppCompatActivity() {
         receivedImageView = findViewById(R.id.receivedImageView)
         cameraExecutor = Executors.newSingleThreadExecutor()
 
+        val settingsButton: Button = findViewById(R.id.settings)
         val recognitionButton: Button = findViewById(R.id.sf_recognition)
         val stolenCarButton: Button = findViewById(R.id.stolen_car)
         val photoButton: Button = findViewById(R.id.photo)
         val selectPictureButton: Button = findViewById(R.id.selectPictureButton)
 
+        settingsButton.setOnClickListener {
+            // Navigate to EmailPasswordActivity
+            val intent = Intent(this, EmailPasswordActivity::class.java)
+            startActivity(intent)
+        }
         // Add click listener for selectPictureButton
         selectPictureButton.setOnClickListener {
             if (isReadStoragePermissionGranted()) {

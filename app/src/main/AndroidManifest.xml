@@ -67,6 +67,8 @@
         <!-- Camera Activity -->
         <activity android:name=".CameraActivity" />
 
+        <activity android:name=".EmailPasswordActivity" />
+
 
     </application>
 
