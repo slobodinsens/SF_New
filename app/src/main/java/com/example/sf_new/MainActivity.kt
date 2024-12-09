@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
         openTextInputButton = findViewById(R.id.openTextInputButton)
         inputEditText = findViewById(R.id.inputEditText)
         sendButton = findViewById(R.id.sendButton)
-        textInputContainer = findViewById(R.id.textInputContainer)
+        //textInputContainer = findViewById(R.id.textInputContainer)
         buttonsGroup = findViewById(R.id.buttonsGroup)
         receivedImageView = findViewById(R.id.receivedImageView)
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -124,8 +124,18 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        val openTextInputButton = findViewById<Button>(R.id.openTextInputButton)
+        val inputControls = findViewById<View>(R.id.inputControls)
+        val logicContainer = findViewById<View>(R.id.logicContainer)
+        val buttonsGroup = findViewById<View>(R.id.buttonsGroup)
+
         openTextInputButton.setOnClickListener {
-            showTextInputContainer()
+            // Скрываем элементы activity_main
+            logicContainer.visibility = View.GONE
+            buttonsGroup.visibility = View.GONE
+
+            // Показываем inputControls
+            inputControls.visibility = View.VISIBLE
         }
 
         sendButton.setOnClickListener {
