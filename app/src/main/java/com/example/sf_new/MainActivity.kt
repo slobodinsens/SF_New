@@ -18,13 +18,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Button
-import android.widget.EditText
-import android.widget.GridView
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -33,7 +27,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-
 
 class MainActivity : AppCompatActivity() {
 
@@ -44,9 +37,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var openTextInputButton: Button
     private lateinit var inputEditText: EditText
     private lateinit var sendButton: Button
-    private lateinit var textInputContainer: LinearLayout
+    private lateinit var inputControls: View
     private lateinit var buttonsGroup: LinearLayout
     private lateinit var receivedImageView: ImageView
+    private lateinit var logicContainer: View
 
     private val CAMERA_REQUEST_CODE = 100
     private val SELECT_PICTURE_REQUEST_CODE = 101
@@ -66,9 +60,10 @@ class MainActivity : AppCompatActivity() {
         openTextInputButton = findViewById(R.id.openTextInputButton)
         inputEditText = findViewById(R.id.inputEditText)
         sendButton = findViewById(R.id.sendButton)
-        //textInputContainer = findViewById(R.id.textInputContainer)
+        inputControls = findViewById(R.id.inputControls)
         buttonsGroup = findViewById(R.id.buttonsGroup)
         receivedImageView = findViewById(R.id.receivedImageView)
+        logicContainer = findViewById(R.id.logicContainer)
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         val settingsButton: Button = findViewById(R.id.settings)
@@ -76,7 +71,6 @@ class MainActivity : AppCompatActivity() {
         val stolenCarButton: Button = findViewById(R.id.stolen_car)
         val photoButton: Button = findViewById(R.id.photo)
         val selectPictureButton: Button = findViewById(R.id.selectPictureButton)
-
 
         // Add click listener for selectPictureButton
         selectPictureButton.setOnClickListener {
@@ -86,8 +80,8 @@ class MainActivity : AppCompatActivity() {
                 requestReadStoragePermission()
             }
         }
+
         settingsButton.setOnClickListener {
-            // Navigate to EmailPasswordActivity
             val intent = Intent(this, EmailPasswordActivity::class.java)
             startActivity(intent)
         }
@@ -113,41 +107,56 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        closeResponseButton.setOnClickListener {
-            when {
-                receivedImageView.visibility == View.VISIBLE -> hideImageView()
-                responseTextView.visibility == View.VISIBLE -> hideResponseView()
-                webView.visibility == View.VISIBLE -> {
-                    webView.visibility = View.GONE
-                    closeResponseButton.visibility = View.GONE
-                }
-            }
-        }
-
-        val openTextInputButton = findViewById<Button>(R.id.openTextInputButton)
-        val inputControls = findViewById<View>(R.id.inputControls)
-        val logicContainer = findViewById<View>(R.id.logicContainer)
-        val buttonsGroup = findViewById<View>(R.id.buttonsGroup)
-
         openTextInputButton.setOnClickListener {
-            // Скрываем элементы activity_main
             logicContainer.visibility = View.GONE
             buttonsGroup.visibility = View.GONE
-
-            // Показываем inputControls
             inputControls.visibility = View.VISIBLE
         }
 
         sendButton.setOnClickListener {
-            val text = inputEditText.text.toString()
+            val text = inputEditText.text.toString().trim()
             if (text.isNotBlank()) {
                 sendTextToServer(text)
-                inputEditText.text.clear()
-                hideTextInputContainer()
             } else {
                 Toast.makeText(this, "Введите текст для отправки", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun sendTextToServer(text: String) {
+        val client = OkHttpClient()
+        val requestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("id", "android_app")
+            .addFormDataPart("text", text)
+            .build()
+
+        val request = Request.Builder()
+            .url(SERVER_URL)
+            .post(requestBody)
+            .build()
+
+        Thread {
+            try {
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string()
+                    runOnUiThread {
+                        responseTextView.text = "Ответ от сервера: $responseBody"
+                        responseTextView.visibility = View.VISIBLE
+                        closeResponseButton.visibility = View.VISIBLE
+                    }
+                } else {
+                    runOnUiThread {
+                        Toast.makeText(this, "Ошибка: ${response.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    Toast.makeText(this, "Ошибка соединения: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }.start()
     }
 
     private fun openGallery() {
@@ -185,39 +194,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             Toast.makeText(this, "Камера недоступна", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun sendTextToServer(text: String) {
-        val client = OkHttpClient()
-        val requestBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart("id", "android_app")
-            .addFormDataPart("text", text)
-            .build()
-
-        val request = Request.Builder()
-            .url(SERVER_URL)
-            .post(requestBody)
-            .build()
-
-        Thread {
-            try {
-                val response = client.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val responseBody = response.body?.string()
-                    updateResponseText("Ответ от сервера: $responseBody")
-                } else {
-                    updateResponseText("Ошибка: ${response.message}")
-                }
-            } catch (e: Exception) {
-                updateResponseText("Ошибка соединения: ${e.message}")
-            }
-        }.start()
-    }
-
-    private fun hideResponseView() {
-        responseTextView.visibility = View.GONE
-        closeResponseButton.visibility = View.GONE
     }
 
     private fun isReadStoragePermissionGranted(): Boolean {
@@ -306,52 +282,13 @@ class MainActivity : AppCompatActivity() {
         receivedImageView.visibility = View.VISIBLE
     }
 
-    private fun updateResponseText(message: String) {
-        runOnUiThread {
-            responseTextView.text = message
-            responseTextView.visibility = View.VISIBLE
-            closeResponseButton.visibility = View.VISIBLE
-        }
-    }
-
-    @SuppressLint("MissingSuperCall")
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        if (requestCode == READ_STORAGE_PERMISSION_CODE) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                showPhotosPopup()
-            } else {
-                Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun hideImageView() {
-        receivedImageView.visibility = View.GONE
-        closeResponseButton.visibility = View.GONE
-        buttonsGroup.visibility = View.VISIBLE
-    }
-
-    private fun showTextInputContainer() {
-        textInputContainer.visibility = View.VISIBLE
-        buttonsGroup.visibility = View.GONE
-    }
-
-    private fun hideTextInputContainer() {
-        textInputContainer.visibility = View.GONE
-        buttonsGroup.visibility = View.VISIBLE
-    }
-
     override fun onBackPressed() {
         if (receivedImageView.visibility == View.VISIBLE) {
-            hideImageView()
-        } else if (textInputContainer.visibility == View.VISIBLE) {
-            hideTextInputContainer()
-        } else if (webView.visibility == View.VISIBLE) {
-            webView.visibility = View.GONE
+            receivedImageView.visibility = View.GONE
+        } else if (inputControls.visibility == View.VISIBLE) {
+            inputControls.visibility = View.GONE
+            buttonsGroup.visibility = View.VISIBLE
+            logicContainer.visibility = View.VISIBLE
         } else {
             super.onBackPressed()
         }
