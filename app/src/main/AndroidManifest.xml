@@ -57,6 +57,7 @@
             </intent-filter>
         </activity>
 
+
         <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
@@ -67,8 +68,9 @@
         <!-- Camera Activity -->
         <activity android:name=".CameraActivity" />
 
-        <activity android:name=".EmailPasswordActivity" />
-
+        <activity
+            android:name=".EmailPasswordActivity"
+            tools:ignore="MissingClass" />
 
     </application>
 

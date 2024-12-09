@@ -28,7 +28,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.app.EmailPasswordActivity
+import com.example.sf_new.EmailPasswordActivity
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -78,11 +78,7 @@ class MainActivity : AppCompatActivity() {
         val photoButton: Button = findViewById(R.id.photo)
         val selectPictureButton: Button = findViewById(R.id.selectPictureButton)
 
-        settingsButton.setOnClickListener {
-            // Navigate to EmailPasswordActivity
-            val intent = Intent(this, EmailPasswordActivity::class.java)
-            startActivity(intent)
-        }
+
         // Add click listener for selectPictureButton
         selectPictureButton.setOnClickListener {
             if (isReadStoragePermissionGranted()) {
@@ -90,6 +86,11 @@ class MainActivity : AppCompatActivity() {
             } else {
                 requestReadStoragePermission()
             }
+        }
+        settingsButton.setOnClickListener {
+            // Navigate to EmailPasswordActivity
+            val intent = Intent(this, EmailPasswordActivity::class.java)
+            startActivity(intent)
         }
 
         recognitionButton.setOnClickListener {
