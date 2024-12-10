@@ -25,8 +25,10 @@ import androidx.core.content.ContextCompat
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
@@ -42,11 +44,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var receivedImageView: ImageView
     private lateinit var logicContainer: View
 
+
     private val CAMERA_REQUEST_CODE = 100
     private val SELECT_PICTURE_REQUEST_CODE = 101
     private val READ_STORAGE_PERMISSION_CODE = 102
     private var photoUri: Uri? = null
-    private val SERVER_URL = "http://192.168.1.108:5000/process"
+    private val SERVER_URL = "http://10.0.0.43:5000/process"
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,6 +74,7 @@ class MainActivity : AppCompatActivity() {
         val stolenCarButton: Button = findViewById(R.id.stolen_car)
         val photoButton: Button = findViewById(R.id.photo)
         val selectPictureButton: Button = findViewById(R.id.selectPictureButton)
+
 
         // Add click listener for selectPictureButton
         selectPictureButton.setOnClickListener {
@@ -196,6 +200,67 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == SELECT_PICTURE_REQUEST_CODE && resultCode == RESULT_OK) {
+            val selectedImageUri = data?.data
+            if (selectedImageUri != null) {
+                sendImageToServer(selectedImageUri)
+            } else {
+                Toast.makeText(this, "Не удалось выбрать изображение", Toast.LENGTH_SHORT).show()
+            }
+        } else if (requestCode == CAMERA_REQUEST_CODE && resultCode == RESULT_OK) {
+            if (photoUri != null) {
+                sendImageToServer(photoUri!!)
+            } else {
+                Toast.makeText(this, "Не удалось сделать снимок", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun sendImageToServer(imageUri: Uri) {
+        val filePath = getPathFromUri(imageUri)
+        if (filePath != null) {
+            val client = OkHttpClient()
+            val file = File(filePath)
+
+            val requestBody = MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("id", "android_app")
+                .addFormDataPart("image", file.name, file.asRequestBody())
+                .build()
+
+            val request = Request.Builder()
+                .url(SERVER_URL)
+                .post(requestBody)
+                .build()
+
+            Thread {
+                try {
+                    val response = client.newCall(request).execute()
+                    if (response.isSuccessful) {
+                        val responseBody = response.body?.string()
+                        runOnUiThread {
+                            responseTextView.text = "Ответ от сервера: $responseBody"
+                            responseTextView.visibility = View.VISIBLE
+                            closeResponseButton.visibility = View.VISIBLE
+                        }
+                    } else {
+                        runOnUiThread {
+                            Toast.makeText(this, "Ошибка: ${response.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } catch (e: Exception) {
+                    runOnUiThread {
+                        Toast.makeText(this, "Ошибка соединения: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }.start()
+        } else {
+            Toast.makeText(this, "Не удалось получить путь файла", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun isReadStoragePermissionGranted(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
@@ -280,6 +345,15 @@ class MainActivity : AppCompatActivity() {
     private fun displaySelectedPhoto(imageUri: Uri) {
         receivedImageView.setImageURI(imageUri)
         receivedImageView.visibility = View.VISIBLE
+    }
+    private fun getPathFromUri(uri: Uri): String? {
+        val projection = arrayOf(MediaStore.Images.Media.DATA)
+        contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+            cursor.moveToFirst()
+            return cursor.getString(columnIndex)
+        }
+        return null
     }
 
     override fun onBackPressed() {

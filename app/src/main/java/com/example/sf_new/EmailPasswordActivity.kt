@@ -10,7 +10,7 @@ import okhttp3.*
 
 class EmailPasswordActivity : AppCompatActivity() {
 
-    private val SERVER_URL = "http://192.168.1.108:5000/process"
+    private val SERVER_URL = "http://10.0.0.43:5000/process"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
